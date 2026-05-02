@@ -14,15 +14,41 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401 globally — redirect to login
+// Handle responses globally — log errors and redirect on 401
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Log error details for debugging
+    console.error('[API Error]', {
+      status: error.response?.status,
+      message: error.response?.data?.message,
+      details: error.response?.data?.details,
+      url: error.config?.url,
+      method: error.config?.method,
+    });
+
+    // Handle 401 Unauthorized — redirect to login
     if (error.response?.status === 401) {
       localStorage.removeItem('agrivalue_token');
       localStorage.removeItem('agrivalue_user');
       window.location.href = '/login';
     }
+
+    // Handle 403 Forbidden
+    if (error.response?.status === 403) {
+      console.error('[Access Denied]', 'User does not have permission for this resource');
+    }
+
+    // Handle 500 Server Error
+    if (error.response?.status >= 500) {
+      console.error('[Server Error]', 'Backend server encountered an error');
+    }
+
+    // Handle network error
+    if (!error.response) {
+      console.error('[Network Error]', 'Failed to connect to backend. Check your internet or backend URL.');
+    }
+
     return Promise.reject(error);
   }
 );
